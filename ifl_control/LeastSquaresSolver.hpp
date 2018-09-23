@@ -87,6 +87,12 @@ public:
             for (size_t r = i+1; r < _n; r++) {
                 x_out[i] -= _A[r*_m + i] * x_out[r];
             }
+            if (abs(_A[i*_m + i]) < 1e-8f) {
+                // fill output with zeros
+                for (size_t z = 0; z < _n; z++) {
+                    x_out[z] = 0.0f;
+                }
+            }
             x_out[i] /= _A[i*_m + i];
         }
 
