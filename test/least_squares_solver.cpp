@@ -2,9 +2,11 @@
 
 #include "ifl_control/LeastSquaresSolver.hpp"
 
+using namespace ifl_control;
+
 int test_4x4_inverse();
 void to_column_major(const float data_row_major[], size_t rows, size_t columns, float data[]);
-bool isEqual(const float actual[], const float expected[], size_t len, float eps = 1e-8f);
+bool isEqual(const float actual[], const float expected[], size_t len, float eps = 1e-6f);
 
 int main()
 {
@@ -25,7 +27,12 @@ int test_4x4_inverse()
                                        0.7f,  -0.8f,   0.9f,  -0.5f,
                                        -1.f,  -1.1f,  -1.2f,  -1.3f
                                      };
+
+    // These will be available for the solver to use.
     float A[16];
+    float tau[4];
+    float w[4];
+
     to_column_major(data_row_major, 4, 4, A);
     float b[4] = {2.0f, 3.0f, 4.0f, 5.0f};
     float x_check[4] = { 0.97893433f,
@@ -35,7 +42,7 @@ int test_4x4_inverse()
                        };
 
     LeastSquaresSolver solver;
-    solver.setMatrix(A, 4, 4);
+    solver.setMatrix(A, tau, w, 4, 4);
 
     float x[4] = {};
     solver.solve(b, x);
