@@ -19,6 +19,7 @@
  * bounds available from the actuator.
  * The output is a vector containing the control commands.
  */
+template<size_t M, size_t N>
 class ActiveSetAlgorithm
 {
 public:
@@ -29,6 +30,29 @@ public:
 
     }
 
+    int setActuatorEffectiveness(const float B[]) {
+        // Is provided row-major. Convert to column major
+
+        return 0;
+    }
+
+    int setOutputWeights(const float Wv[]) {
+        return 0;
+    }
+
+    int setActuatorUpperLimit(const float u_up[]) {
+        return 0;
+    }
+
+    int setActuatorLowerLimit(const float u_lo[]) {
+        return 0;
+    }
+
+    int calculateActuatorCommands(const float v[], float out[]) {
+        out[0] = 123.0f;
+        return 0;
+    }
+
 private:
 
     /**
@@ -37,10 +61,10 @@ private:
      * Column major for more efficient processing
      *
      */
-    float _B[4*4];
+    float _B[M*N];
 
     /**
      * @brief Weights given to each degree of freedom.
      */
-    float _Wv[4];
+    float _Wv[M];
 };

@@ -1,5 +1,6 @@
 set(tests
     active_set_algorithm
+    least_squares_solver
     )
 
 add_custom_target(test_build)
