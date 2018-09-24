@@ -1,4 +1,5 @@
 #include "test_macros.hpp"
+#include "ifl_control/stdlib_imports.hpp"
 
 #include "ifl_control/LeastSquaresSolver.hpp"
 

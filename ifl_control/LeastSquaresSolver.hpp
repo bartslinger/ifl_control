@@ -13,8 +13,6 @@
 
 #pragma once
 
-#include "stdlib_imports.hpp"
-
 namespace ifl_control {
 
 class LeastSquaresSolver
@@ -22,48 +20,25 @@ class LeastSquaresSolver
 public:
     LeastSquaresSolver() = default;
 
-    void setMatrix(float *A, float *tau, float *w, size_t m, size_t n)
+    int setMatrix(float *A, float *tau, float *w, size_t m, size_t n)
     {
         _A = A;
         _tau = tau;
         _w = w;
         _m = m;
         _n = n;
+
+        // Perform the QR decomposition
+        if (decomposeQR() < 0) {
+            return -1;
+        }
+
+        return 0;
     }
 
     int solve(const float b[], float x_out[])
     {
-        _w[0] = 1.0f;
-        for (size_t j = 0; j < _n; j++) {
-            float normx = 0.0f;
-            for (size_t i = j; i < _m; i++) {
-                size_t idx = j*_m + i;
-                normx += _A[idx] * _A[idx];
-            }
-            normx = sqrt(normx);
-            float s = _A[j*_m + j] > 0.0f ? -1.0f : 1.0f;
-            float u1 = _A[j*_m + j] - s*normx;
-            if (normx < 1e-8f) {
-                break;
-            }
-            for (size_t i = j+1; i < _m; i++) {
-                _w[i-j] = _A[j*_m + i] / u1;
-                _A[j*_m + i] = _w[i-j];
-            }
-            _A[j*_m + j] = s*normx;
-            _tau[j] = -s*u1/normx;
-
-            for (size_t k = j+1; k < _n; k++) {
-                float tmp = 0.0f;
-                for (size_t i = j; i < _m; i++) {
-                    tmp += _w[i-j] * _A[k*_m + i];
-                }
-                for (size_t i = j; i < _m; i++) {
-                    _A[k*_m + i] -= _tau[j] * _w[i-j] * tmp;
-                }
-            }
-        }
-
+        // copy b to x_out
         for (size_t i = 0; i < _m; i++) {
             x_out[i] = b[i];
         }
@@ -100,6 +75,41 @@ public:
     }
 
 private:
+    int decomposeQR() {
+        _w[0] = 1.0f;
+        for (size_t j = 0; j < _n; j++) {
+            float normx = 0.0f;
+            for (size_t i = j; i < _m; i++) {
+                size_t idx = j*_m + i;
+                normx += _A[idx] * _A[idx];
+            }
+            normx = sqrt(normx);
+            float s = _A[j*_m + j] > 0.0f ? -1.0f : 1.0f;
+            float u1 = _A[j*_m + j] - s*normx;
+            if (normx < 1e-8f) {
+                return -1;
+            }
+            for (size_t i = j+1; i < _m; i++) {
+                _w[i-j] = _A[j*_m + i] / u1;
+                _A[j*_m + i] = _w[i-j];
+            }
+            _A[j*_m + j] = s*normx;
+            _tau[j] = -s*u1/normx;
+
+            for (size_t k = j+1; k < _n; k++) {
+                float tmp = 0.0f;
+                for (size_t i = j; i < _m; i++) {
+                    tmp += _w[i-j] * _A[k*_m + i];
+                }
+                for (size_t i = j; i < _m; i++) {
+                    _A[k*_m + i] -= _tau[j] * _w[i-j] * tmp;
+                }
+            }
+        }
+
+        return 0;
+    }
+
     float *_A = nullptr;
     float *_tau = nullptr;
     float *_w = nullptr;
