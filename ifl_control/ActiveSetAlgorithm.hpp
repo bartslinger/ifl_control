@@ -68,6 +68,7 @@ public:
 
     int calculateActuatorCommands(const float v[], float u_k[]) {
 
+        checkActuatorLimits();
         printf("\n");
         // multiply virtual control with weights to get b
         for (size_t i = 0; i < M; i++) {
@@ -87,6 +88,16 @@ public:
 private:
 
     int runIteration(float u_k[]) {
+
+        // make sure the initial solution is within bounds
+        for (size_t j = 0; j < N; j++) {
+            if (u_k[j] > _u_up[j]) {
+                u_k[j] = _u_up[j];
+            }
+            if (u_k[j] < _u_lo[j]) {
+                u_k[j] = _u_lo[j];
+            }
+        }
 
         float p[M] = {0};
 
@@ -190,6 +201,15 @@ private:
         }
 
         return -1;
+    }
+
+    void checkActuatorLimits()
+    {
+        for (size_t j = 0; j < N; j++) {
+            if (_u_lo[j] > _u_up[j]) {
+                _u_lo[j] = _u_up[j];
+            }
+        }
     }
 
     void applyWeights()
