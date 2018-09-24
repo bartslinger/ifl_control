@@ -118,7 +118,7 @@ private:
             }
 
             for (size_t i = 0; i < M; i++) {
-                //printf("Af[%lu] = %1.5f\n", i, _A_f[i]);
+                //printf("d[%lu] = %1.15f\n", i, d[i]);
             }
 
             // perturbation of free actuators from least squares solver
@@ -138,6 +138,7 @@ private:
                     p[j] = pp[z];
                     z++;
                 }
+                //printf("p[%lu] = %1.5f\n", j, p[j]);
             }
         } else {
             printf("no free actuators\n");
@@ -154,10 +155,12 @@ private:
                 if (u_k[j] + p[j] > _u_up[j]) {
                     alpha = (_u_up[j] - u_k[j]) / p[j];
                     //printf("exceed upper bound %lu\n", j);
+                    //printf("div by %1.15f\talpha: %1.30f\n", p[j], (_u_up[j] - u_k[j]));
                 }
                 else if (u_k[j] + p[j] < _u_lo[j]) {
                     alpha = (_u_lo[j] - u_k[j]) / p[j];
                     //printf("exceed lower bound %lu\n", j);
+                    //printf("div by %1.15f\n", p[j]);
                 }
 
                 if (alpha < smallest_alpha) {
