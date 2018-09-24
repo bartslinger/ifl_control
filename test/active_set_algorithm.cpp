@@ -7,6 +7,7 @@ using namespace ifl_control;
 
 int test_just_roll();
 int test_ask_too_much_roll();
+int test_ask_some_roll_and_too_much_yaw();
 
 bool isEqual(const float actual[], const float expected[], size_t len, float eps = 1e-4f);
 
@@ -20,6 +21,11 @@ int main()
     }
 
     ret = test_ask_too_much_roll();
+    if (ret < 0) {
+        return ret;
+    }
+
+    ret = test_ask_some_roll_and_too_much_yaw();
     if (ret < 0) {
         return ret;
     }
@@ -78,6 +84,34 @@ int test_ask_too_much_roll()
     int ret = asa.calculateActuatorCommands(v, out);
     (void) ret;
     float expected_out[4] = {-1.0f, 1.0f, 1.0f, -1.0f};
+    TEST(isEqual(out, expected_out, 4));
+    return 0;
+}
+
+int test_ask_some_roll_and_too_much_yaw()
+{
+    float B[] = {-20.0f, 20.0f, 20.0f, -20.0f,
+                 17.0f, -17.0f, 17.0f, -17.0f,
+                 0.7f, 0.7f, -0.7f, -0.7f,
+                 -1.2f, -1.2f, -1.2f, -1.2f
+                };
+    float Wv[] = {1000.0f, 1000.0f, 1.0f, 100.0f};
+    float u_up[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    float u_lo[] = {-1.0f, -1.0f, -1.0f, -1.0f};
+
+    // 20 roll is do-able, but 5 yaw is too much
+    float v[] = {20.0f, 0.0f, 5.0f, 0.0f};
+    ActiveSetAlgorithm<4,4> asa;
+
+    asa.setActuatorEffectiveness(B);
+    asa.setOutputWeights(Wv);
+    asa.setActuatorUpperLimit(u_up);
+    asa.setActuatorLowerLimit(u_lo);
+
+    float out[4] = {};
+    int ret = asa.calculateActuatorCommands(v, out);
+    (void) ret;
+    float expected_out[4] = {0.5f, 1.0f, -0.5f, -1.0f};
     TEST(isEqual(out, expected_out, 4));
     return 0;
 }

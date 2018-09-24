@@ -68,12 +68,18 @@ public:
 
     int calculateActuatorCommands(const float v[], float u_k[]) {
 
+        printf("\n");
         // multiply virtual control with weights to get b
         for (size_t i = 0; i < M; i++) {
             _b[i] = v[i] * _Wv[i];
         }
 
-        runIteration(u_k);
+        for (int i = 0; i < 10; i++) {
+            if (runIteration(u_k) == 0) {
+                // optimal solution found
+                break;
+            }
+        }
 
         return 0;
     }
@@ -96,7 +102,7 @@ private:
             }
         }
 
-        printf("k: %lu\n", k);
+        //printf("k: %lu\n", k);
 
         // If there is more than one free actuator
         if (k > 0) {
@@ -133,11 +139,8 @@ private:
                     z++;
                 }
             }
-        }
-
-        // u_k = u_k + p
-        for (size_t j = 0; j < N; j++) {
-            u_k[j] += p[j];
+        } else {
+            printf("no free actuators\n");
         }
 
         float smallest_alpha = 1.0f;
@@ -145,16 +148,16 @@ private:
 
         // iterate through free actuators, check solution feasibility
         for (size_t j = 0; j < N; j++) {
-            printf("u_k[%lu] = %1.5f\n", j, u_k[j]);
+            //printf("u_k[%lu] = %1.5f\n", j, u_k[j]);
             if (_W[j] == 0) {
                 float alpha = 1.0f;
                 if (u_k[j] + p[j] > _u_up[j]) {
                     alpha = (_u_up[j] - u_k[j]) / p[j];
-                    printf("exceed upper bound %lu\n", j);
+                    //printf("exceed upper bound %lu\n", j);
                 }
                 else if (u_k[j] + p[j] < _u_lo[j]) {
                     alpha = (_u_lo[j] - u_k[j]) / p[j];
-                    printf("exceed lower bound %lu\n", j);
+                    //printf("exceed lower bound %lu\n", j);
                 }
 
                 if (alpha < smallest_alpha) {
@@ -172,9 +175,18 @@ private:
             }
             // add constraint to working set
             _W[smallest_alpha_idx] = p[smallest_alpha_idx] > 0.0f ? 1 : -1;
+            printf("add %lu to working set\n", smallest_alpha_idx);
+        } else {
+            // check if an optimal solution was found using lagrangian
+            // u_k = u_k + p
+            for (size_t j = 0; j < N; j++) {
+                u_k[j] += p[j];
+            }
+            // todo: lagrangian optimality check
+            return 0;
         }
 
-        return 0;
+        return -1;
     }
 
     void applyWeights()
