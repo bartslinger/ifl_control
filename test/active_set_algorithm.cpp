@@ -1,9 +1,12 @@
 #include "test_macros.hpp"
+#include "ifl_control/stdlib_imports.hpp"
 
 #include "ifl_control/ActiveSetAlgorithm.hpp"
 
+using namespace ifl_control;
+
 int test_just_roll();
-bool isEqual(const float actual[], const float expected[], size_t len, float eps = 1e-8f);
+bool isEqual(const float actual[], const float expected[], size_t len, float eps = 1e-6f);
 
 int main()
 {
@@ -29,7 +32,7 @@ int test_just_roll()
     float u_lo[] = {-1.0f, -1.0f, -1.0f, -1.0f};
 
     float v[] = {10.0f, 0.0f, 0.0f, 0.0f};
-    ActiveSetAlgorithm<4,6> asa;
+    ActiveSetAlgorithm<4,4> asa;
 
     asa.setActuatorEffectiveness(B);
     asa.setOutputWeights(Wv);
