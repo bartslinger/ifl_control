@@ -66,7 +66,7 @@ public:
         return 0;
     }
 
-    int calculateActuatorCommands(const float v[], float u_k[]) {
+    int calculateActuatorCommands(const float v[], float u_k[], size_t max_iterations) {
 
         checkActuatorLimits();
         printf("\n");
@@ -75,7 +75,7 @@ public:
             _b[i] = v[i] * _Wv[i];
         }
 
-        for (int i = 0; i < 10; i++) {
+        for (size_t i = 0; i < max_iterations; i++) {
             if (runIteration(u_k) == 0) {
                 // optimal solution found
                 break;

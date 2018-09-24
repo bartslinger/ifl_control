@@ -59,7 +59,7 @@ int test_just_roll()
     asa.setActuatorLowerLimit(u_lo);
 
     float out[4] = {0};
-    int ret = asa.calculateActuatorCommands(v, out);
+    int ret = asa.calculateActuatorCommands(v, out, 10);
     (void) ret;
     float expected_out[4] = {-0.125f, 0.125f, 0.125f, -0.125f};
     TEST(isEqual(out, expected_out, 4));
@@ -87,7 +87,7 @@ int test_ask_too_much_roll()
     asa.setActuatorLowerLimit(u_lo);
 
     float out[4] = {};
-    int ret = asa.calculateActuatorCommands(v, out);
+    int ret = asa.calculateActuatorCommands(v, out, 10);
     (void) ret;
     float expected_out[4] = {-1.0f, 1.0f, 1.0f, -1.0f};
     TEST(isEqual(out, expected_out, 4));
@@ -115,7 +115,7 @@ int test_ask_some_roll_and_too_much_yaw()
     asa.setActuatorLowerLimit(u_lo);
 
     float out[4] = {};
-    int ret = asa.calculateActuatorCommands(v, out);
+    int ret = asa.calculateActuatorCommands(v, out, 10);
     (void) ret;
     float expected_out[4] = {0.5f, 1.0f, -0.5f, -1.0f};
     TEST(isEqual(out, expected_out, 4));
@@ -148,7 +148,7 @@ int test_div_zero()
 
     // initial solution is the final solution
     float out[4] = {1.0f, 0.0f, 0.0f, 0.0f};
-    int ret = asa.calculateActuatorCommands(v, out);
+    int ret = asa.calculateActuatorCommands(v, out, 10);
     (void) ret;
     float expected_out[4] = {1.0f, 0.0f, 0.0f, 0.0f};
     TEST(isEqual(out, expected_out, 4));
