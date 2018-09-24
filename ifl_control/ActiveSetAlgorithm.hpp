@@ -40,6 +40,7 @@ public:
             _B[i] = B_row_major[(i%M)*N + (i/M)];
             //printf("%lu\t%1.2f\n", i, _B[i]);
         }
+        applyWeights();
         return 0;
     }
 
@@ -47,35 +48,141 @@ public:
         for (size_t i = 0; i < M; i++) {
             _Wv[i] = Wv[i];
         }
+        applyWeights();
         return 0;
     }
 
     int setActuatorUpperLimit(const float u_up[]) {
-        for (size_t i = 0; i < M; i++) {
+        for (size_t i = 0; i < N; i++) {
             _u_up[i] = u_up[i];
         }
         return 0;
     }
 
     int setActuatorLowerLimit(const float u_lo[]) {
-        for (size_t i = 0; i < M; i++) {
-            _u_lo[i] = _u_lo[i];
+        for (size_t i = 0; i < N; i++) {
+            _u_lo[i] = u_lo[i];
         }
         return 0;
     }
 
-    int calculateActuatorCommands(const float v[], float out[]) {
-        LeastSquaresSolver solver;
-        float tau[M];
-        float w[M];
+    int calculateActuatorCommands(const float v[], float u_k[]) {
 
-        solver.setMatrix(_B, tau, w, M, N);
+        // multiply virtual control with weights to get b
+        for (size_t i = 0; i < M; i++) {
+            _b[i] = v[i] * _Wv[i];
+        }
 
-        solver.solve(v, out);
+        runIteration(u_k);
+
         return 0;
     }
 
 private:
+
+    int runIteration(float u_k[]) {
+
+        float p[M] = {0};
+
+        // Construct Af
+        size_t k = 0;
+        for (size_t j = 0; j < N; j++) {
+            if (_W[j] == 0) {
+                // this actuator is not free, add to Af
+                for (size_t i = 0; i < M; i++) {
+                    _A_f[k*M + i] = _A[j*M + i];
+                }
+                k++;
+            }
+        }
+
+        printf("k: %lu\n", k);
+
+        // If there is more than one free actuator
+        if (k > 0) {
+            // construct d = b - A*u_k
+            float d[M] = {0};
+            // d = b
+            for (size_t i = 0; i < M; i++) {
+                d[i] = _b[i];
+            }
+            // d -= A*u_k
+            for (size_t l = 0; l < M*N; l++) {
+                d[l%M] -= _A[l] * u_k[l/M];
+            }
+
+            for (size_t i = 0; i < M; i++) {
+                //printf("Af[%lu] = %1.5f\n", i, _A_f[i]);
+            }
+
+            // perturbation of free actuators from least squares solver
+            float pp[N] = {0}; // first k are filled, max N
+
+            // working space for solver
+            float tau[M] = {0};
+            float w[M] = {0};
+
+            _solver.setMatrix(_A_f, tau, w, M, N);
+            _solver.solve(d, pp);
+
+            // Construct full perturbation, including constrained ones
+            size_t z = 0;
+            for (size_t j = 0; j < N; j++) {
+                if (_W[j] == 0) {
+                    p[j] = pp[z];
+                    z++;
+                }
+            }
+        }
+
+        // u_k = u_k + p
+        for (size_t j = 0; j < N; j++) {
+            u_k[j] += p[j];
+        }
+
+        float smallest_alpha = 1.0f;
+        size_t smallest_alpha_idx = 0;
+
+        // iterate through free actuators, check solution feasibility
+        for (size_t j = 0; j < N; j++) {
+            printf("u_k[%lu] = %1.5f\n", j, u_k[j]);
+            if (_W[j] == 0) {
+                float alpha = 1.0f;
+                if (u_k[j] + p[j] > _u_up[j]) {
+                    alpha = (_u_up[j] - u_k[j]) / p[j];
+                    printf("exceed upper bound %lu\n", j);
+                }
+                else if (u_k[j] + p[j] < _u_lo[j]) {
+                    alpha = (_u_lo[j] - u_k[j]) / p[j];
+                    printf("exceed lower bound %lu\n", j);
+                }
+
+                if (alpha < smallest_alpha) {
+                    smallest_alpha = alpha;
+                    smallest_alpha_idx = j;
+                }
+            }
+        }
+
+        if (smallest_alpha < 1.0f) {
+            //printf("smallest alpha at %lu = %1.5f\n", smallest_alpha_idx, smallest_alpha);
+            // scale the solution to fit within bounds
+            for (size_t j = 0; j < N; j++) {
+                u_k[j] += p[j] * smallest_alpha;
+            }
+            // add constraint to working set
+            _W[smallest_alpha_idx] = p[smallest_alpha_idx] > 0.0f ? 1 : -1;
+        }
+
+        return 0;
+    }
+
+    void applyWeights()
+    {
+        for (size_t l = 0; l < M*N; l++) {
+            _A[l] = _B[l] * _Wv[l%M];
+        }
+    }
 
     /**
      * @brief Control effectiveness matrix
@@ -90,8 +197,15 @@ private:
      */
     float _Wv[M];
 
-    float _u_up[M];
-    float _u_lo[M];
+    float _A[M*N]; // this is just B with applied weights
+    float _u_up[N];
+    float _u_lo[N];
+
+    float _A_f[M*N];
+    float _b[M];
+    int8_t _W[M] = {0};
+
+    LeastSquaresSolver _solver;
 };
 
 } // namespace ifl_control
